@@ -1,0 +1,440 @@
+// Prisma schema – PostgreSQL (see DATABASE_URL in backend/.env)
+// Commands (from backend/): prisma generate | prisma migrate dev | prisma db push
+
+generator client {
+  provider                    = "prisma-client-py"
+  interface                   = "asyncio"
+  recursive_type_depth        = 5
+  enable_experimental_decimal = true
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                       Int                       @id @default(autoincrement())
+  name                     String                    @db.VarChar(255)
+  email                    String                    @unique @db.VarChar(320)
+  password_hash            String                    @db.Text
+  /// Assistant / WhatsApp bot reply language: `hi` or `en`.
+  conversation_language    String                    @default("hi") @db.VarChar(8)
+  /// Outbound WhatsApp (daily brief, reminders) – 10-digit India or full international digits.
+  whatsapp_number          String?                   @db.VarChar(20)
+  /// Opt-in: scheduled morning financial summary via WhatsApp (8 AM IST).
+  morning_briefing_enabled Boolean                   @default(false)
+  is_active                Boolean                   @default(true)
+  /// Optional trusted helper (e.g. family member) for assisted approvals – UI + future OTP flow.
+  trusted_helper_phone     String?                   @db.VarChar(16)
+  helper_approval_required Boolean                   @default(false)
+  created_at                 DateTime                  @default(now())
+  inventory_items            InventoryItem[]
+  khata_uploads              KhataUpload[]
+  onboarding_profile         OnboardingProfile?
+  /// Normalized business identity + engine scores (dashboard / module selection).
+  business_profile           BusinessProfile?
+  ledger_transactions        LedgerTransaction[]
+  reconstructed_financials ReconstructedFinancial[]
+  predictions                Prediction[]
+  system_actions             SystemAction[]
+  customers                  Customer[]
+  document_records           DocumentRecord[]
+  rl_states                  RlState[]
+  notification_logs          NotificationLog[]
+  aa_consents                AAConsent[]
+  gst_records                GSTRecord[]
+  /// free | pro | enterprise – feature gating + MRR.
+  subscription_tier          String                   @default("free") @db.VarChar(32)
+  /// Shareable code for referral loop (unique when set).
+  referral_code              String?                  @unique @db.VarChar(16)
+  referred_by_user_id        Int?
+  referred_by                User?                    @relation("UserReferrals", fields: [referred_by_user_id], references: [id], onDelete: SetNull)
+  referred_users             User[]                   @relation("UserReferrals")
+  credit_score_snapshots     CreditScoreSnapshot[]
+  audit_logs                 AuditLog[]
+  collection_campaigns       CollectionCampaign[]
+  referral_events_as_referrer ReferralEvent[]         @relation("ReferralReferrer")
+  referral_event_as_referee   ReferralEvent?          @relation("ReferralReferee")
+  bills                      Bill[]
+
+  @@map("users")
+}
+
+/// Setu / Account Aggregator consent – bank statement access.
+model AAConsent {
+  id               Int      @id @default(autoincrement())
+  user_id          Int
+  user             User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  consent_id       String   @unique @db.VarChar(128)
+  /// PENDING | ACTIVE | REVOKED | FAILED
+  status           String   @db.VarChar(32)
+  mobile           String?  @db.VarChar(20)
+  linked_accounts  Json?
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  @@index([user_id, status])
+  @@map("aa_consents")
+}
+
+/// Core business profile – drives dynamic dashboard and model selection.
+model BusinessProfile {
+  id                     Int      @id @default(autoincrement())
+  user_id                Int      @unique
+  user                   User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  business_type          String   @db.VarChar(32)
+  monthly_turnover_range String   @db.VarChar(32)
+  payment_mix_cash       Decimal  @default(0.5) @db.Decimal(5, 4)
+  payment_mix_digital    Decimal  @default(0.5) @db.Decimal(5, 4)
+  inventory_type         String   @db.VarChar(32)
+  credit_usage           String   @db.VarChar(32)
+  customer_type          String   @db.VarChar(32)
+  gst_registered         Boolean  @default(false)
+  /// India GSTIN (15 chars) when registered – used for GST return sync + liability estimates.
+  gstin                  String?  @db.VarChar(16)
+  formality_score        Decimal? @db.Decimal(6, 4)
+  trust_score            Decimal? @db.Decimal(6, 4)
+  created_at             DateTime @default(now())
+  updated_at             DateTime @updatedAt
+
+  @@index([user_id])
+  @@map("business_profiles")
+}
+
+/// Filed or synced GST returns (GSP / manual / mock backfill).
+model GSTRecord {
+  id             Int       @id @default(autoincrement())
+  user_id        Int
+  user           User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  gstin          String    @db.VarChar(16)
+  /// Period label e.g. 2025-12 or Q3-2025
+  period         String    @db.VarChar(16)
+  return_type    String    @db.VarChar(32)
+  filed_at       DateTime?
+  taxable_value  Decimal?  @db.Decimal(18, 2)
+  tax_paid       Decimal?  @db.Decimal(18, 2)
+  raw            Json?
+  created_at     DateTime  @default(now())
+
+  @@index([user_id, period])
+  @@map("gst_records")
+}
+
+/// Append-only financial movements (ingestion from Paytm, SMS, CSV, OCR, manual).
+model LedgerTransaction {
+  id                Int      @id @default(autoincrement())
+  user_id           Int
+  user              User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  amount            Decimal  @db.Decimal(18, 2)
+  /// credit | debit
+  txn_type          String   @map("type") @db.VarChar(16)
+  category          String   @db.VarChar(32)
+  source            String   @db.VarChar(32)
+  /// Business event time (SMS time, settlement time, etc.).
+  occurred_at       DateTime @default(now()) @map("timestamp")
+  confidence_score  Decimal? @db.Decimal(5, 4)
+  /// Optional raw description / counterparty (SMS text fragment, narration).
+  description       String?  @db.Text
+  metadata          Json?
+
+  @@index([user_id, occurred_at])
+  @@index([user_id, source])
+  @@map("transactions")
+}
+
+/// Point-in-time reconstructed financial view (AI / reconciliation layer).
+model ReconstructedFinancial {
+  id               Int      @id @default(autoincrement())
+  user_id          Int
+  user             User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  observed_revenue Decimal? @db.Decimal(18, 2)
+  estimated_cash   Decimal? @db.Decimal(18, 2)
+  total_revenue    Decimal? @db.Decimal(18, 2)
+  confidence       Decimal? @db.Decimal(5, 4)
+  snapshot_at      DateTime @default(now()) @map("timestamp")
+
+  @@index([user_id, snapshot_at])
+  @@map("reconstructed_financials")
+}
+
+/// Simulation / forecast outputs (risk + cash paths).
+model Prediction {
+  id               Int      @id @default(autoincrement())
+  user_id          Int
+  user             User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  risk_probability Decimal? @db.Decimal(6, 4)
+  expected_cash    Decimal? @db.Decimal(18, 2)
+  worst_case_cash  Decimal? @db.Decimal(18, 2)
+  best_case_cash   Decimal? @db.Decimal(18, 2)
+  horizon_days     Int
+  created_at       DateTime @default(now())
+
+  @@index([user_id, created_at])
+  @@map("predictions")
+}
+
+/// Recommended or executed business actions (collect, delay expense, etc.).
+model SystemAction {
+  id           Int         @id @default(autoincrement())
+  user_id      Int
+  user         User        @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  action_type  String      @db.VarChar(64)
+  target       String?     @db.VarChar(255)
+  amount       Decimal?    @db.Decimal(18, 2)
+  status       String      @db.VarChar(32)
+  metadata     Json?
+  completed_at DateTime?
+  created_at   DateTime    @default(now())
+  updated_at   DateTime    @updatedAt
+  executions   Execution[]
+
+  @@index([user_id, status])
+  @@map("actions")
+}
+
+/// Channel-level execution trace (WhatsApp, Paytm, call, etc.).
+model Execution {
+  id         Int          @id @default(autoincrement())
+  action_id  Int
+  action     SystemAction @relation(fields: [action_id], references: [id], onDelete: Cascade)
+  channel    String       @db.VarChar(32)
+  status     String       @db.VarChar(32)
+  response   String?      @db.Text
+  metadata   Json?
+  created_at DateTime     @default(now())
+
+  @@index([action_id])
+  @@index([created_at])
+  @@map("executions")
+}
+
+/// Receivable / customer ledger for collections UX.
+model Customer {
+  id                Int       @id @default(autoincrement())
+  user_id           Int
+  user              User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  name              String    @db.VarChar(255)
+  phone             String?   @db.VarChar(20)
+  total_due         Decimal   @default(0) @db.Decimal(18, 2)
+  last_payment_date DateTime?
+  risk_score        Decimal?  @db.Decimal(6, 4)
+  /// Latest bill linked as proof for WhatsApp udhar reminders (optional).
+  bill_id           Int?
+  bill              Bill?     @relation(fields: [bill_id], references: [id], onDelete: SetNull)
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @updatedAt
+
+  @@index([user_id])
+  @@index([user_id, phone])
+  @@index([bill_id])
+  collection_campaigns CollectionCampaign[]
+  @@map("customers")
+}
+
+/// Uploaded documents with OCR / parse payload (invoices, GST, bank statements).
+model DocumentRecord {
+  id          Int      @id @default(autoincrement())
+  user_id     Int
+  user        User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  doc_type    String   @db.VarChar(32)
+  file_url    String   @db.VarChar(2048)
+  parsed_data Json?
+  confidence  Decimal? @db.Decimal(5, 4)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  @@index([user_id])
+  @@map("documents")
+}
+
+/// RL / bandit transitions for personalization (state, action, reward, next state).
+model RlState {
+  id         Int      @id @default(autoincrement())
+  user_id    Int?
+  user       User?    @relation(fields: [user_id], references: [id], onDelete: SetNull)
+  state      Json
+  action     Json
+  reward     Decimal? @db.Decimal(12, 6)
+  next_state Json?
+  created_at DateTime @default(now()) @map("timestamp")
+
+  @@index([user_id, created_at])
+  @@map("rl_states")
+}
+
+/// Saved business profile (onboarding form + computed snapshot) – survives server restarts.
+model OnboardingProfile {
+  id         Int      @id @default(autoincrement())
+  user_id    Int      @unique
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  payload    Json
+  snapshot   Json?
+  updated_at DateTime @updatedAt
+
+  @@map("onboarding_profiles")
+}
+
+/// SKU stock for this user – khata sales deduct quantity here.
+model InventoryItem {
+  id                    Int       @id @default(autoincrement())
+  user_id               Int
+  user                  User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  sku                   String    @db.VarChar(64)
+  name                  String    @db.VarChar(255)
+  quantity              Float     @default(0)
+  unit                  String?   @db.VarChar(32)
+  reorder_threshold     Float     @default(20)
+  /// High-water mark for stock % bar (≥ quantity; grows on restock, not reduced by sales).
+  stock_ceiling         Float?
+  /// Last time stock was auto-reduced from bill/POS ingest.
+  last_bill_deduct_at   DateTime?
+  created_at            DateTime  @default(now())
+  updated_at            DateTime  @updatedAt
+
+  @@index([user_id])
+  @@map("inventory_items")
+}
+
+/// POS / OCR ingested bills – inventory + ledger + optional khaata link.
+model Bill {
+  id              Int      @id @default(autoincrement())
+  user_id         Int
+  user            User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  bill_number     String   @db.VarChar(128)
+  /// api | ocr
+  source          String   @db.VarChar(16)
+  raw_payload     Json?
+  parsed_items    Json
+  total_amount    Decimal  @db.Decimal(18, 2)
+  customer_phone  String?  @db.VarChar(20)
+  customer_name   String?  @db.VarChar(255)
+  file_path       String?  @db.Text
+  /// completed | partial | failed
+  status          String   @db.VarChar(32)
+  error_message   String?  @db.Text
+  created_at      DateTime @default(now())
+
+  customers Customer[]
+
+  @@index([user_id, created_at])
+  @@map("bills")
+}
+
+/// Inbound provider webhooks (Razorpay, Meta, etc.) – audit + replay support.
+model WebhookLog {
+  id         Int      @id @default(autoincrement())
+  provider   String   @db.VarChar(32)
+  event_type String   @db.VarChar(64)
+  payload    Json
+  status     String   @db.VarChar(32)
+  created_at DateTime @default(now())
+
+  @@index([provider, created_at])
+  @@map("webhook_logs")
+}
+
+/// Outbound notification attempts (WhatsApp brief, etc.).
+model NotificationLog {
+  id         Int      @id @default(autoincrement())
+  user_id    Int?
+  user       User?    @relation(fields: [user_id], references: [id], onDelete: SetNull)
+  channel    String   @db.VarChar(32)
+  kind       String   @db.VarChar(64)
+  status     String   @db.VarChar(32)
+  detail     String?  @db.Text
+  metadata   Json?
+  created_at DateTime @default(now())
+
+  @@index([user_id, created_at])
+  @@map("notification_logs")
+}
+
+/// Photo of a physical khata page (audit trail).
+model KhataUpload {
+  id             Int      @id @default(autoincrement())
+  user_id        Int
+  user           User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  file_path      String   @db.VarChar(1024)
+  original_name  String?  @db.VarChar(255)
+  created_at     DateTime @default(now())
+
+  @@index([user_id])
+  @@map("khata_uploads")
+}
+
+/// Lender-facing credit signal snapshot (derived from ledger, GST, RL, customers).
+model CreditScoreSnapshot {
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  score      Int
+  band       String   @db.VarChar(16)
+  factors    Json
+  created_at DateTime @default(now())
+
+  @@index([user_id, created_at])
+  @@map("credit_score_snapshots")
+}
+
+/// Append-only audit trail for regulated / sensitive flows (lending, payouts, referral redeem).
+model AuditLog {
+  id         Int      @id @default(autoincrement())
+  user_id    Int?
+  user       User?    @relation(fields: [user_id], references: [id], onDelete: SetNull)
+  actor      String   @db.VarChar(32)
+  action     String   @db.VarChar(128)
+  resource   String?  @db.VarChar(255)
+  metadata   Json?
+  ip         String?  @db.VarChar(64)
+  created_at DateTime @default(now())
+
+  @@index([user_id, created_at])
+  @@index([action, created_at])
+  @@map("audit_logs")
+}
+
+/// 14-step autonomous collections ladder (WhatsApp / log – channel in metadata).
+model CollectionCampaign {
+  id           Int       @id @default(autoincrement())
+  user_id      Int
+  user         User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  customer_id  Int
+  customer     Customer  @relation(fields: [customer_id], references: [id], onDelete: Cascade)
+  step_index   Int       @default(0)
+  status       String    @db.VarChar(32)
+  next_run_at  DateTime?
+  last_channel String?   @db.VarChar(32)
+  metadata     Json?
+  created_at   DateTime  @default(now())
+  updated_at   DateTime  @updatedAt
+
+  @@index([user_id, status, next_run_at])
+  @@map("collection_campaigns")
+}
+
+model ReferralEvent {
+  id              Int      @id @default(autoincrement())
+  referrer_id     Int
+  referrer        User     @relation("ReferralReferrer", fields: [referrer_id], references: [id], onDelete: Cascade)
+  referee_user_id Int      @unique
+  referee         User     @relation("ReferralReferee", fields: [referee_user_id], references: [id], onDelete: Cascade)
+  created_at      DateTime @default(now())
+
+  @@index([referrer_id])
+  @@map("referral_events")
+}
+
+/// Anonymized peer benchmarks – updated by nightly job from active users.
+model BenchmarkAggregate {
+  id           Int      @id @default(autoincrement())
+  industry_key String   @db.VarChar(64)
+  metric       String   @db.VarChar(64)
+  p50          Float?
+  p90          Float?
+  sample_count Int      @default(0)
+  updated_at   DateTime @updatedAt
+
+  @@unique([industry_key, metric])
+  @@map("benchmark_aggregates")
+}

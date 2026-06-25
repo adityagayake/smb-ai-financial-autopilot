@@ -1,0 +1,13 @@
+.venv
+__pycache__
+*.py[cod]
+.pytest_cache
+.git
+.env
+*.md
+media
+ocr_key.json
+*-credentials.json
+# Do not exclude all of data/ – engine needs data/sample_transactions.csv in the image.
+data/rl_qtable.json
+.prisma-cache/

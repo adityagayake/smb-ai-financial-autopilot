@@ -1,0 +1,111 @@
+date,amount,type,description
+2025-10-01,2852.15,debit,Freight – inbound shipment
+2025-10-01,12100.46,debit,NEFT to distributor – FMCG stock
+2025-10-03,1694.09,debit,Freight – inbound shipment
+2025-10-03,1592.48,debit,Marketing – local pamphlets
+2025-10-04,213.49,credit,UPI received – walk-in customer
+2025-10-04,258.96,debit,Shop rent – monthly
+2025-10-05,4363.04,debit,Cold drink stock – summer load
+2025-10-06,5184.21,credit,UPI – repeat buyer
+2025-10-06,508.63,credit,IMPS in – working capital top-up
+2025-10-06,348.15,credit,Wholesale account payment received
+2025-10-07,895.06,debit,Supplier invoice – rice 25kg bags
+2025-10-09,4414.48,debit,Staff salary – helper
+2025-10-10,18448.13,debit,LPG cylinder – commercial
+2025-10-10,3520.12,credit,UPI received – walk-in customer
+2025-10-11,6727.00,debit,NEFT to distributor – FMCG stock
+2025-10-11,915.47,debit,Insurance – shop policy
+2025-10-12,12708.00,credit,UPI – repeat buyer
+2025-10-12,963.92,debit,Insurance – shop policy
+2025-10-13,482.17,debit,Electricity bill – BESCOM auto debit
+2025-10-15,3541.06,credit,UPI received – walk-in customer
+2025-10-15,12101.00,debit,Staff salary – helper
+2025-10-17,441.47,credit,Paytm QR settlement batch
+2025-10-18,1312.21,credit,IMPS in – working capital top-up
+2025-10-18,12064.00,debit,LPG cylinder – commercial
+2025-10-20,1567.34,debit,Staff salary – helper
+2025-10-20,457.21,debit,Freight – inbound shipment
+2025-10-20,682.86,debit,Equipment repair – mixer
+2025-10-21,467.50,debit,Freight – inbound shipment
+2025-10-21,6778.60,debit,Electricity bill – BESCOM auto debit
+2025-10-23,993.25,credit,UPI – repeat buyer
+2025-10-24,1274.63,credit,UPI received – kirana counter
+2025-10-25,8979.64,credit,IMPS in – working capital top-up
+2025-10-25,108.04,credit,IMPS in – working capital top-up
+2025-10-25,904.17,credit,POS card settlement
+2025-10-26,2125.84,credit,UPI received – walk-in customer
+2025-10-27,825.48,credit,UPI received – walk-in customer
+2025-10-27,530.37,credit,GPay soundbox – daily total
+2025-10-28,2117.22,credit,UPI – repeat buyer
+2025-10-28,1525.33,debit,Shop rent – monthly
+2025-10-29,2911.68,debit,LPG cylinder – commercial
+2025-10-29,11963.06,debit,GST payment – quarterly challan
+2025-10-31,1522.90,debit,Staff salary – helper
+2025-10-31,518.62,debit,Freight – inbound shipment
+2025-10-31,260.49,debit,LPG cylinder – commercial
+2025-11-01,1637.78,debit,Electricity bill – BESCOM auto debit
+2025-11-01,8831.90,credit,GPay soundbox – daily total
+2025-11-03,12029.49,debit,Petty cash – tea and snacks
+2025-11-03,2180.58,credit,POS card settlement
+2025-11-04,12185.69,debit,LPG cylinder – commercial
+2025-11-04,12082.28,debit,LPG cylinder – commercial
+2025-11-06,1356.76,credit,Razorpay payment link – prepaid order
+2025-11-06,247.67,credit,UPI – repeat buyer
+2025-11-07,12507.51,credit,UPI received – walk-in customer
+2025-11-09,5219.96,credit,UPI received – walk-in customer
+2025-11-09,6896.10,debit,Marketing – local pamphlets
+2025-11-09,213.46,credit,Cash sale – evening rush
+2025-11-11,2899.04,debit,Freight – inbound shipment
+2025-11-11,8955.88,credit,Paytm QR settlement batch
+2025-11-13,432.26,credit,POS card settlement
+2025-11-13,18652.83,debit,Marketing – local pamphlets
+2025-11-14,512.53,debit,Staff salary – helper
+2025-11-14,3450.80,credit,Paytm QR settlement batch
+2025-11-14,18626.76,debit,Supplier invoice – rice 25kg bags
+2025-11-16,5374.70,credit,POS card settlement
+2025-11-16,18551.91,debit,Cold drink stock – summer load
+2025-11-17,12607.75,credit,IMPS in – working capital top-up
+2025-11-18,730.86,debit,LPG cylinder – commercial
+2025-11-18,322.92,debit,Staff salary – helper
+2025-11-19,4328.56,debit,Equipment repair – mixer
+2025-11-20,1450.43,debit,Staff salary – helper
+2025-11-21,1550.44,debit,Electricity bill – BESCOM auto debit
+2025-11-21,1178.65,credit,Razorpay payment link – prepaid order
+2025-11-22,2822.99,debit,Staff salary – helper
+2025-11-24,8976.05,credit,Razorpay payment link – prepaid order
+2025-11-26,1511.91,debit,Cold drink stock – summer load
+2025-11-28,1560.80,debit,UPI merchant fee
+2025-11-28,12628.42,credit,POS card settlement
+2025-11-29,2891.27,debit,Freight – inbound shipment
+2025-11-30,18619.26,debit,Bank charges – SMS alerts
+2025-11-30,18420.41,debit,GST payment – quarterly challan
+2025-12-01,103.47,credit,Paytm QR settlement batch
+2025-12-02,1254.23,credit,Cash sale – evening rush
+2025-12-02,4349.10,debit,Insurance – shop policy
+2025-12-03,5382.91,credit,UPI received – walk-in customer
+2025-12-04,2890.92,debit,Shop rent – monthly
+2025-12-04,2044.67,credit,IMPS in – working capital top-up
+2025-12-06,4368.52,debit,Insurance – shop policy
+2025-12-07,1176.03,credit,UPI – repeat buyer
+2025-12-09,203.02,credit,Paytm QR settlement batch
+2025-12-09,4284.08,debit,UPI merchant fee
+2025-12-10,9003.71,credit,Cash sale – evening rush
+2025-12-10,973.58,credit,IMPS in – working capital top-up
+2025-12-11,1631.98,debit,Marketing – local pamphlets
+2025-12-11,8977.21,credit,IMPS in – working capital top-up
+2025-12-11,2889.19,debit,Shop rent – monthly
+2025-12-12,4292.59,debit,Electricity bill – BESCOM auto debit
+2025-12-13,2076.11,credit,Razorpay payment link – prepaid order
+2025-12-13,6766.41,debit,Marketing – local pamphlets
+2025-12-14,6716.17,debit,GST payment – quarterly challan
+2025-12-14,144.74,credit,UPI – repeat buyer
+2025-12-14,12677.62,credit,Cash sale – evening rush
+2025-12-15,707.76,debit,Marketing – local pamphlets
+2025-12-16,2067.01,credit,UPI – repeat buyer
+2025-12-16,2038.68,credit,Paytm QR settlement batch
+2025-12-17,6842.13,debit,NEFT to distributor – FMCG stock
+2025-12-18,4152.10,debit,Bank charges – SMS alerts
+2025-12-18,18566.67,debit,Bank charges – SMS alerts
+2025-12-18,249.93,debit,UPI merchant fee
+2025-12-20,8774.60,credit,UPI received – walk-in customer
+2025-12-20,251.50,credit,GPay soundbox – daily total
